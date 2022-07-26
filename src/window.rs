@@ -1,19 +1,17 @@
-use std::ops::Add;
-
 use druid::{
-    widget::{Button, Container, Controller, Flex, TextBox},
+    widget::{Button, Container, Controller, Flex, TextBox, Align},
     AppDelegate, Data, Env, Event, EventCtx, Lens, Widget, WidgetExt, WidgetPod, Selector,
 };
 
 use crate::todo::{Todo, TodoItem, TodoState};
 
 pub const ADD_NEW_TODO: Selector<String> = Selector::new("Add_New_Todo");
-
+pub const REMOVE_TODO_ITEM: Selector<uuid::Uuid> = Selector::new("Remove_Todo_Item");
 pub struct TodoWindow {
     contain: WidgetPod<TodoWindowState, Container<TodoWindowState>>,
 }
 
-#[derive(Data, Clone, Lens)]
+#[derive(Data, Clone, Lens, PartialEq, Eq)]
 pub struct TodoWindowState {
     pub todo: TodoState,
     pub new_text: String,
@@ -72,22 +70,28 @@ impl TodoWindow {
                 ctx.submit_command(crate::window::ADD_NEW_TODO.with(data.new_text.clone()));
                 ctx.set_handled();
             },
+        )
+        .expand_width();
+        let mut container = Container::new(
+            Flex::column()
+                .with_child(
+                    Flex::row()
+                        .with_flex_child(
+                            TextBox::new()
+                                .with_placeholder("请输入新内容！")
+                                .expand_width()
+                                .lens(TodoWindowState::new_text),
+                            6.0,
+                        )
+                        .with_default_spacer()
+                        .with_flex_child(btn,1.0)
+                        ,
+                )
+                .with_flex_child(Todo::new().lens(TodoWindowState::todo), 4.0)
+                .padding(10.0)
         );
         Self {
-            contain: WidgetPod::new(Container::new(
-                Flex::column()
-                    .with_child(
-                        Flex::row()
-                            .with_flex_child(
-                                TextBox::new()
-                                    .with_placeholder("请输入新内容！")
-                                    .lens(TodoWindowState::new_text),
-                                1.0,
-                            )
-                            .with_child(btn),
-                    )
-                    .with_flex_child(Todo::new().lens(TodoWindowState::todo), 1.0),
-            )),
+            contain: WidgetPod::new(container),
         }
     }
 }
@@ -131,6 +135,13 @@ impl AppDelegate<TodoWindowState> for WindowDelegate {
             data.new_text = "".into();
             return druid::Handled::Yes;
         }
+        else if cmd.is(REMOVE_TODO_ITEM) {
+            let id = cmd.get(REMOVE_TODO_ITEM).unwrap();
+            data.todo.remove(id);
+            return druid::Handled::Yes;
+        }
+
+
 
         druid::Handled::No
     }

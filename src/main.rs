@@ -14,7 +14,8 @@ fn main() {
     ];
     let state = window::TodoWindowState::from_vec(data);
     let win = WindowDesc::new(window::TodoWindow::new())
-        .title("title");
+        .title("title")
+        .window_size((650.,430.));
     AppLauncher::with_window(win)
         .delegate(window::WindowDelegate{})
         .launch(state).expect("running failed.");
